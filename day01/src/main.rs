@@ -1,6 +1,7 @@
 use std::io::{BufRead, BufReader};
 use memmap2::Mmap;
 use std::fs::File;
+use itertools::Itertools;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load the input file
@@ -13,28 +14,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn part1(depths: &Vec<u16>) {
-    let greater = depths.windows(2).fold(0, |acc, slice| {
-        if slice[1] > slice[0] {
-            acc + 1
-        } else {
-            acc
-        }
-    });
+fn part1(depths: &[u16]) {
+    let greater = depths
+        .windows(2)
+        .filter(|&slice| slice[1] > slice[0])
+        .count();
 
     println!("Number of individual depths greater than the last: {}", greater);
 }
 
-fn part2(depths: &Vec<u16>) {
-    let window_sums: Vec<u16> = depths.windows(3).map(|slice| slice.iter().sum()).collect();
-
-    let greater = window_sums.windows(2).fold(0, |acc, slice| {
-        if slice[1] > slice[0] {
-            acc + 1
-        } else {
-            acc
-        }
-    });
+fn part2(depths: &[u16]) {
+    let greater = depths
+        .windows(3)
+        .map(|slice| slice.iter().sum())
+        .tuple_windows::<(u16, u16)>().filter(|&(a, b)| b > a)
+        .count();
 
     println!("Number of sliding window depths greater than the last: {}", greater);
 }
@@ -59,7 +53,7 @@ fn load_input(file: &str) -> Result<Vec<u16>, Box<dyn std::error::Error>> {
     for line_res in buf_reader.lines() {
         let line = line_res?;
 
-        if line != "" {
+        if !line.is_empty() {
             depths.push(line.parse::<u16>()?);
         }
     }
