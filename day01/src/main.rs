@@ -14,8 +14,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn part1(depths: &Vec<u16>) {
-    let greater = depths.iter().enumerate().skip(1).fold(0, |acc, (i, depth)| {
-        if depth > &depths[i - 1] {
+    let greater = depths.windows(2).fold(0, |acc, slice| {
+        if slice[1] > slice[0] {
             acc + 1
         } else {
             acc
@@ -26,12 +26,10 @@ fn part1(depths: &Vec<u16>) {
 }
 
 fn part2(depths: &Vec<u16>) {
-    let window_sums: Vec<u16> = depths.iter().enumerate().skip(2).map(|(i, depth)| {
-        depth + depths[i - 1] + depths[i - 2]
-    }).collect();
+    let window_sums: Vec<u16> = depths.windows(3).map(|slice| slice.iter().sum()).collect();
 
-    let greater = window_sums.iter().enumerate().skip(1).fold(0, |acc, (i, depth)| {
-        if depth > &window_sums[i - 1] {
+    let greater = window_sums.windows(2).fold(0, |acc, slice| {
+        if slice[1] > slice[0] {
             acc + 1
         } else {
             acc
