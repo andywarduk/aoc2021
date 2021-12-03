@@ -43,16 +43,34 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'day02'",
+            "name": "Debug executable 'day03'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=day03",
+                    "--package=day03"
+                ],
+                "filter": {
+                    "name": "day03",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'day03'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=day01",
-                    "--package=day02"
+                    "--bin=day03",
+                    "--package=day03"
                 ],
                 "filter": {
-                    "name": "day02",
+                    "name": "day03",
                     "kind": "bin"
                 }
             },
