@@ -14,13 +14,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn part1(numbers: &[u8], boards: &Boards) {
+fn part1(numbers: &[u8], boards: &[Board]) {
     let (completed, last_num, score) = first_rowcol(numbers, boards).unwrap();
 
     println!("Part 1: winning board is {}, last number {}, score {}", completed, last_num, score);
 }
 
-fn part2(numbers: &[u8], boards: &Boards) {
+fn part2(numbers: &[u8], boards: &[Board]) {
     let (completed, last_num, score) = last_rowcol(numbers, boards).unwrap();
 
     println!("Part 2: losing board is {}, last number {}, score {}", completed, last_num, score);
@@ -46,20 +46,18 @@ impl Board {
 
 }
 
-type Boards = Vec<Board>;
-
 type GameLine = Vec<bool>;
 type GameBoard = Vec<GameLine>;
 
 struct Game<'a> {
-    boards: &'a Boards,
+    boards: &'a [Board],
     marks: Vec<GameBoard>,
     complete: Vec<bool>
 }
 
 impl<'a> Game<'a> {
 
-    fn new(boards: &'a Boards) -> Self {
+    fn new(boards: &'a [Board]) -> Self {
         let board_height = boards[0].numbers.len();
         let board_width = boards[0].numbers[0].len();
     
@@ -112,7 +110,7 @@ impl<'a> Game<'a> {
 
 }
 
-fn first_rowcol(numbers: &[u8], boards: &Boards) -> Option<(usize, u8, u32)> {
+fn first_rowcol(numbers: &[u8], boards: &[Board]) -> Option<(usize, u8, u32)> {
     let mut game = Game::new(boards);
 
     for &n in numbers {
@@ -126,7 +124,7 @@ fn first_rowcol(numbers: &[u8], boards: &Boards) -> Option<(usize, u8, u32)> {
     None
 }
 
-fn last_rowcol(numbers: &[u8], boards: &Boards) -> Option<(usize, u8, u32)> {
+fn last_rowcol(numbers: &[u8], boards: &[Board]) -> Option<(usize, u8, u32)> {
     let mut game = Game::new(boards);
     let mut boards_left = game.boards.len();
 
@@ -159,7 +157,7 @@ fn score_board(game: &Game, board: usize, last_num: u8) -> u32 {
     score * last_num as u32
 }
 
-fn load_input(file: &str) -> Result<(Vec<u8>, Boards), Box<dyn Error>> {
+fn load_input(file: &str) -> Result<(Vec<u8>, Vec<Board>), Box<dyn Error>> {
     // Open the file
     let file = File::open(file)?;
 
@@ -178,7 +176,7 @@ enum ParseStage {
     Board
 }
 
-fn load_buf(buf: &[u8]) -> Result<(Vec<u8>, Boards), Box<dyn Error>> {
+fn load_buf(buf: &[u8]) -> Result<(Vec<u8>, Vec<Board>), Box<dyn Error>> {
     // Create buf reader for the buffer
     let buf_reader = BufReader::new(buf);
 
