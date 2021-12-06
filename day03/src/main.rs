@@ -74,7 +74,7 @@ fn calc_epsilon_gamma(bits: &[Vec<bool>]) -> (usize, usize) {
 }
 
 fn get_common_bits(bits: &[Vec<bool>], most: bool) -> usize {
-    let ent = reduce_common_bits(bits.to_vec().clone(), 0, most);
+    let ent = reduce_common_bits(bits.to_vec(), 0, most);
 
     let count = ent.len() - 1;
 
