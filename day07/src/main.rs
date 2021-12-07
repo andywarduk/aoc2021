@@ -1,7 +1,13 @@
+#[macro_use] extern crate cached;
+
+use std::collections::hash_map::DefaultHasher;
 use std::io::{BufRead, BufReader};
 use std::error::Error;
 use std::fs::File;
+use std::hash::{Hash, Hasher};
 use memmap2::Mmap;
+use cached::SizedCache;
+use cached::proc_macro::cached;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Load the input file
@@ -26,20 +32,29 @@ fn part2(positions: &[u16]) {
     println!("Part 2: Optimum position {}, fuel used {}", pos, fuel);
 }
 
+fn array_hash(positions: &[u16]) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    positions.hash(&mut hasher);
+    hasher.finish()
+}
+
 fn calculate_hpos1(positions: &[u16]) -> (u16, u32) {
     // Calculate the integer mean position
     let sum: u32 = positions.iter().map(|p| *p as u32).sum();
 
     let mean = sum / positions.len() as u32;
 
+    // Calculate the array hash
+    let pos_hash = array_hash(positions);
+
     // Calculate the optimum position
     let mut test_pos = mean as u16;
 
-    let mut test_fuel = calculate_distance1(positions, test_pos);
+    let mut test_fuel = calculate_distance1(positions, pos_hash, test_pos);
 
     loop {
-        let test_down = calculate_distance1(positions, test_pos - 1);
-        let test_up = calculate_distance1(positions, test_pos + 1);
+        let test_down = calculate_distance1(positions, pos_hash, test_pos - 1);
+        let test_up = calculate_distance1(positions, pos_hash, test_pos + 1);
 
         if test_down < test_fuel {
             test_pos -= 1;
@@ -55,8 +70,13 @@ fn calculate_hpos1(positions: &[u16]) -> (u16, u32) {
     (test_pos, test_fuel)
 }
 
-fn calculate_distance1(positions: &[u16], from: u16) -> u32 {
-    positions.iter().map(|p| (from as i32 - *p as i32).abs() as u32).sum()
+cached_key!{
+    DIST1: SizedCache<String, u32> = SizedCache::with_size(10);
+    Key = { format!("{}{}", pos_hash, from) };
+
+    fn calculate_distance1(positions: &[u16], pos_hash: u64, from: u16) -> u32 = {
+        positions.iter().map(|p| (from as i32 - *p as i32).abs() as u32).sum::<u32>()
+    }
 }
 
 fn calculate_hpos2(positions: &[u16]) -> (u16, u32) {
@@ -65,14 +85,17 @@ fn calculate_hpos2(positions: &[u16]) -> (u16, u32) {
 
     let mean = sum / positions.len() as u32;
 
+    // Calculate the array hash
+    let pos_hash = array_hash(positions);
+
     // Calculate the optimum position
     let mut test_pos = mean as u16;
 
-    let mut test_fuel = calculate_distance2(positions, test_pos);
+    let mut test_fuel = calculate_distance2(positions, pos_hash, test_pos);
 
     loop {
-        let test_down = calculate_distance2(positions, test_pos - 1);
-        let test_up = calculate_distance2(positions, test_pos + 1);
+        let test_down = calculate_distance2(positions, pos_hash, test_pos - 1);
+        let test_up = calculate_distance2(positions, pos_hash, test_pos + 1);
 
         if test_down < test_fuel {
             test_pos -= 1;
@@ -88,11 +111,25 @@ fn calculate_hpos2(positions: &[u16]) -> (u16, u32) {
     (test_pos, test_fuel)
 }
 
-fn calculate_distance2(positions: &[u16], from: u16) -> u32 {
-    positions.iter().map(|p| {
-        let dist = (from as i32 - *p as i32).abs() as u32;
-        (1..=dist).sum::<u32>()
-    }).sum()
+#[cached]
+fn fuel2(dist: u32) -> u32 {
+    match dist {
+        0 => 0,
+        1 => 1,
+        dist => dist + fuel2(dist - 1)
+    }
+}
+
+cached_key!{
+    DIST2: SizedCache<String, u32> = SizedCache::with_size(10);
+    Key = { format!("{}{}", pos_hash, from) };
+
+    fn calculate_distance2(positions: &[u16], pos_hash: u64, from: u16) -> u32 = {
+        positions.iter().map(|p| {
+            let dist = (from as i32 - *p as i32).abs() as u32;
+            fuel2(dist)
+        }).sum::<u32>()
+    }
 }
 
 fn load_input(file: &str) -> Result<Vec<u16>, Box<dyn Error>> {
