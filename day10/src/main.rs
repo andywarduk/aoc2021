@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (score1, score2) = score_syntax_errors(&code);
 
     println!("Part 1: Syntax checker score: {}", score1);
-    println!("Part 1: Autcorrect score: {}", score2);
+    println!("Part 2: Autcorrect score: {}", score2);
 
     Ok(())
 }
