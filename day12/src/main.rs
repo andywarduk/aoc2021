@@ -33,37 +33,32 @@ fn part2(tree: &HashMap<String, Vec<String>>) {
 #[derive(Clone)]
 struct Path1 {
     visited: HashSet<String>,
-    history: Vec<String>
+    pos: String
 }
 
 fn count_paths1(tree: &HashMap<String, Vec<String>>) -> usize {
     let work_paths: Vec<Path1> = vec![Path1 {
         visited: HashSet::new(),
-        history: vec!["start".to_string()]
+        pos: "start".to_string()
     }];
 
-    let mut paths: Vec<Vec<String>> = Vec::new();
+    let mut paths: usize = 0;
 
     walk1(work_paths, &mut paths, tree);
 
-    paths.len()
+    paths
 }
 
-fn walk1(work_paths: Vec<Path1>, paths: &mut Vec<Vec<String>>, tree: &HashMap<String, Vec<String>>) {
+fn walk1(work_paths: Vec<Path1>, paths: &mut usize, tree: &HashMap<String, Vec<String>>) {
     let mut new_work_paths: Vec<Path1> = Vec::new();
 
     for work_path in work_paths {
-        let pos = work_path.history.last().unwrap();
-
-        let choices = tree.get(pos).unwrap();
+        let choices = tree.get(&work_path.pos).unwrap();
 
         for choice in choices {
             if choice == "end" {
                 // Reached the end
-                let mut history = work_path.history.clone();
-                history.push(choice.clone());
-                paths.push(history);
-
+                *paths += 1;
                 continue
             }
             
@@ -79,13 +74,9 @@ fn walk1(work_paths: Vec<Path1>, paths: &mut Vec<Vec<String>>, tree: &HashMap<St
                 }
             }
 
-            let mut history = work_path.history.clone();
-
-            history.push(choice.clone());
-
             new_work_paths.push(Path1 {
                 visited,
-                history
+                pos: choice.clone()
             });
         }
     }
@@ -106,30 +97,28 @@ enum SmallVisit {
 struct Path2 {
     small_visit: SmallVisit,
     dont_visit: HashSet<String>,
-    history: Vec<String>
+    pos: String
 }
 
 fn count_paths2(tree: &HashMap<String, Vec<String>>) -> usize {
     let work_paths: Vec<Path2> = vec![Path2 {
         small_visit: SmallVisit::None,
         dont_visit: HashSet::new(),
-        history: vec!["start".to_string()]
+        pos: "start".to_string()
     }];
 
-    let mut paths: Vec<Vec<String>> = Vec::new();
+    let mut paths: usize = 0;
 
     walk2(work_paths, &mut paths, tree);
 
-    paths.len()
+    paths
 }
 
-fn walk2(work_paths: Vec<Path2>, paths: &mut Vec<Vec<String>>, tree: &HashMap<String, Vec<String>>) {
+fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<String>>) {
     let mut new_work_paths: Vec<Path2> = Vec::new();
 
     for work_path in work_paths {
-        let pos = work_path.history.last().unwrap();
-
-        let choices = tree.get(pos).unwrap();
+        let choices = tree.get(&work_path.pos).unwrap();
 
         for choice in choices {
             if choice == "end" {
@@ -139,9 +128,7 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut Vec<Vec<String>>, tree: &HashMap<St
                         // Ignore this solution - small cave only visited once
                     }
                     _ => {
-                        let mut history = work_path.history.clone();
-                        history.push(choice.clone());
-                        paths.push(history);        
+                        *paths += 1;
                     }
                 }
 
@@ -157,9 +144,6 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut Vec<Vec<String>>, tree: &HashMap<St
                 // one where this small cave is visited twice and
                 // one where the small cave is visited once
                 if work_path.small_visit == SmallVisit::None || work_path.small_visit == SmallVisit::VisitedOnce(choice.clone()) {
-                    let mut history = work_path.history.clone();
-                    history.push(choice.clone());
-
                     let mut dont_visit = work_path.dont_visit.clone();
 
                     // Visit twice
@@ -173,30 +157,24 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut Vec<Vec<String>>, tree: &HashMap<St
                     new_work_paths.push(Path2 {
                         small_visit, 
                         dont_visit,
-                        history
+                        pos: choice.clone()
                     });
                 };
 
                 // Visit once
-                let mut history = work_path.history.clone();
-                history.push(choice.clone());
-
                 let mut dont_visit = work_path.dont_visit.clone();
                 dont_visit.insert(choice.clone());
 
                 new_work_paths.push(Path2 {
                     small_visit: work_path.small_visit.clone(), 
                     dont_visit,
-                    history
+                    pos: choice.clone()
                 });
             } else {
-                let mut history = work_path.history.clone();
-                history.push(choice.clone());
-
                 new_work_paths.push(Path2 {
                     small_visit: work_path.small_visit.clone(), 
                     dont_visit: work_path.dont_visit.clone(),
-                    history
+                    pos: choice.clone()
                 });
             }
         }
