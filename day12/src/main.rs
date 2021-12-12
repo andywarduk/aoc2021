@@ -38,21 +38,30 @@ fn write_dot(tree: &Tree, file: &str) -> Result<(), Box<dyn Error>> {
     // Open a file in write-only mode, returns `io::Result<File>`
     let mut file = File::create(&path)?;
 
-    writeln!(&mut file, "graph caves {{")?;
+    writeln!(&mut file, "digraph caves {{")?;
+    writeln!(&mut file, "\tconcentrate=true;")?;
 
-    // Build edges
-    let mut edges: HashSet<Vec<&String>> = HashSet::new();
+    // Write start node
+    writeln!(&mut file, "\tstart [color=red]")?;
+    let stos: Vec<String> = tree.get("start").unwrap().iter().filter(|&s| s != "end").cloned().collect();
+    writeln!(&mut file, "\tstart -> {{{}}};", &stos.join(" "))?;
 
+    // Write other nodes
     for (from, tos) in tree {
-        for to in tos {
-            let mut edge = vec![from, to];
-            edge.sort();
-            edges.insert(edge);
+        if from != "start" {
+            let ftos: Vec<String> = tos.iter().filter(|&s| s != "end").cloned().collect();
+            writeln!(&mut file, "\t{} -> {{{}}};", from, &ftos.join(" "))?;
         }
     }
 
-    for edge in edges {
-        writeln!(&mut file, "\t{} -- {}", edge[0], edge[1])?;
+    // Write end node
+    writeln!(&mut file, "\tend [color=red]")?;
+    for (from, tos) in tree {
+        let ftos: Vec<String> = tos.iter().filter(|&s| s == "end").cloned().collect();
+        
+        if !ftos.is_empty() {
+            writeln!(&mut file, "\t{} -> {{{}}};", from, &ftos.join(" "))?;
+        }
     }
 
     writeln!(&mut file, "}}")?;

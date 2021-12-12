@@ -1,24 +1,19 @@
-graph caves {
-	end -- zs
-	HW -- gv
-	WO -- iu
-	HW -- end
-	gv -- start
-	HW -- iu
-	DP -- by
-	WO -- end
-	SK -- iu
-	WO -- gv
-	HW -- zt
-	DP -- zs
-	HW -- zs
-	WO -- zs
-	gv -- zt
-	start -- zt
-	WO -- zt
-	SK -- zs
-	DP -- gv
-	DP -- iu
-	WO -- start
-	QJ -- zs
+digraph caves {
+	concentrate=true;
+	start [color=red]
+	start -> {gv WO zt};
+	zt -> {WO gv HW};
+	QJ -> {zs};
+	gv -> {zt WO DP HW};
+	iu -> {SK WO HW DP};
+	HW -> {zs zt iu gv};
+	DP -> {zs gv by iu};
+	SK -> {iu zs};
+	WO -> {zs zt iu gv};
+	zs -> {WO QJ DP HW SK};
+	by -> {DP};
+	end [color=red]
+	HW -> {end};
+	WO -> {end};
+	zs -> {end};
 }
