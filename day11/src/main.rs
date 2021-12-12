@@ -1,7 +1,9 @@
 use std::io::{BufRead, BufReader};
 use std::error::Error;
 use std::fs::File;
+use std::borrow::Cow;
 use memmap2::Mmap;
+use gif::{Encoder, Repeat, Frame};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Load the input file
@@ -10,6 +12,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Run parts
     part1(&energy);
     part2(&energy);
+
+    // Create animated GIF
+    create_gif(&energy);
 
     Ok(())
 }
@@ -32,7 +37,7 @@ fn count_flashes(energy: &[Vec<u8>], steps: usize) -> usize {
     let mut loc_energy = energy.to_vec();
     
     for _ in 0..steps {
-        total += step(&mut loc_energy);
+        total += step(&mut loc_energy, None);
     }
 
     total
@@ -49,7 +54,7 @@ fn find_sync_step(energy: &[Vec<u8>]) -> usize {
     loop {
         step_cnt += 1;
 
-        if step(&mut loc_energy) == all_flash_cnt {
+        if step(&mut loc_energy, None) == all_flash_cnt {
             break
         }
     }
@@ -57,7 +62,7 @@ fn find_sync_step(energy: &[Vec<u8>]) -> usize {
     step_cnt
 }
 
-fn step(energy: &mut [Vec<u8>]) -> usize {
+fn step(energy: &mut [Vec<u8>], encoder: Option<&mut Encoder<&mut File>>) -> usize {
     let mut flashers: Vec<(usize, usize)> = Vec::new();
 
     // Increase energy
@@ -89,6 +94,10 @@ fn step(energy: &mut [Vec<u8>]) -> usize {
         }
     }
 
+    if let Some(encoder) = encoder {
+        write_frame(energy, 1, encoder);
+    }
+
     // Count and reset flashers
     let mut flash_cnt = 0;
 
@@ -102,6 +111,93 @@ fn step(energy: &mut [Vec<u8>]) -> usize {
     }
 
     flash_cnt
+}
+
+const GIF_COLOUR_MAP: [u8; 33] = [
+    0x59, 0x0d, 0x22,
+    0x80, 0x0f, 0x2f,
+    0xa4, 0x13, 0x3c,
+    0xc9, 0x18, 0x4a,
+    0xff, 0x4d, 0x6d,
+    0xff, 0x75, 0x8f,
+    0xff, 0x8f, 0xa3,
+    0xff, 0xb3, 0xc1,
+    0xff, 0xcc, 0xd5,
+    0xff, 0xf0, 0xf3,
+    0xff, 0xff, 0x00
+];
+
+const GIF_SCALE: usize = 50;
+
+fn create_gif(energy: &[Vec<u8>]) {
+    let width = energy[0].len();
+    let height = energy.len();
+    let all_flash_cnt = width * height;
+
+    let mut image = File::create("output11.gif").unwrap();
+
+    let mut encoder = Encoder::new(&mut image,
+        (width * GIF_SCALE) as u16, (height * GIF_SCALE) as u16,
+        &GIF_COLOUR_MAP).unwrap();
+
+    encoder.set_repeat(Repeat::Infinite).unwrap();
+
+    let mut loc_energy = energy.to_vec();
+
+    write_frame(&loc_energy, 10, &mut encoder);
+
+    loop {
+        if step(&mut loc_energy, Some(&mut encoder)) == all_flash_cnt {
+            break
+        }
+
+        write_frame(&loc_energy, 10, &mut encoder);
+    }
+
+    // Write dummy delay frame
+    let frame = Frame {
+        width: 0,
+        height: 0,
+        delay: 300, // 3 seconds
+        ..Frame::default()
+    };
+
+    encoder.write_frame(&frame).unwrap();
+}
+
+fn write_frame(energy: &[Vec<u8>], delay: u16, encoder: &mut Encoder<&mut File>) {
+    let width = energy[0].len();
+    let height = energy.len();
+
+    let mut pixels: Vec<u8> = Vec::with_capacity((width * GIF_SCALE) * (height * GIF_SCALE));
+    let mut ptr: usize = 0;
+
+    for line in energy {
+        let start = ptr;
+
+        for &e in line {
+            pixels.resize(ptr + GIF_SCALE, e);
+            ptr += GIF_SCALE;
+        }
+
+        let end = ptr;
+
+        for _ in 1..GIF_SCALE {
+            pixels.extend_from_within(start..end);
+        }
+
+        ptr = start + ((width * GIF_SCALE) * GIF_SCALE);
+    }
+
+    let frame = Frame {
+        width: (width * GIF_SCALE) as u16,
+        height: (height * GIF_SCALE) as u16,
+        delay,
+        buffer: Cow::Borrowed(&pixels),
+        ..Frame::default()
+    };
+
+    encoder.write_frame(&frame).unwrap();
 }
 
 type ParseResult = Vec<Vec<u8>>;
@@ -150,7 +246,7 @@ fn test_step() {
 
     let mut energy = load_buf(energy_input.as_bytes()).unwrap();
 
-    let flash_cnt = step(&mut energy);
+    let flash_cnt = step(&mut energy, None);
 
     assert_eq!(flash_cnt, 9);
 
@@ -162,7 +258,7 @@ fn test_step() {
         vec![3, 4, 5, 4, 3],
     ]);
 
-    let flash_cnt = step(&mut energy);
+    let flash_cnt = step(&mut energy, None);
 
     assert_eq!(flash_cnt, 0);
 
