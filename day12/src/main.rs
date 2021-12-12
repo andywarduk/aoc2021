@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::rc::Rc;
 use std::io::{BufRead, BufReader};
 use std::error::Error;
@@ -38,28 +39,22 @@ struct Path1<'a> {
 }
 
 fn count_paths1(tree: &HashMap<String, Vec<String>>) -> usize {
-    let work_paths: Vec<Path1> = vec![Path1 {
-        visited: Rc::new(HashSet::new()),
-        pos: "start"
-    }];
-
     let mut paths: usize = 0;
 
-    walk1(work_paths, &mut paths, tree);
+    let mut work_paths: VecDeque<Path1> = VecDeque::new();
+    
+    work_paths.push_back(Path1 {
+        visited: Rc::new(HashSet::new()),
+        pos: "start"
+    });
 
-    paths
-}
-
-fn walk1(work_paths: Vec<Path1>, paths: &mut usize, tree: &HashMap<String, Vec<String>>) {
-    let mut new_work_paths: Vec<Path1> = Vec::new();
-
-    for work_path in work_paths {
+    while let Some(work_path) = work_paths.pop_front() {
         let choices = tree.get(work_path.pos).unwrap();
 
         for choice in choices {
             if choice == "end" {
                 // Reached the end
-                *paths += 1;
+                paths += 1;
                 continue
             }
             
@@ -80,16 +75,14 @@ fn walk1(work_paths: Vec<Path1>, paths: &mut usize, tree: &HashMap<String, Vec<S
                 visited = work_path.visited.clone();
             }
 
-            new_work_paths.push(Path1 {
+            work_paths.push_back(Path1 {
                 visited,
                 pos: &choice[..]
             });
         }
     }
 
-    if !new_work_paths.is_empty() {
-        walk1(new_work_paths, paths, tree);
-    }
+    paths
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -107,23 +100,17 @@ struct Path2<'a> {
 }
 
 fn count_paths2(tree: &HashMap<String, Vec<String>>) -> usize {
-    let work_paths: Vec<Path2> = vec![Path2 {
+    let mut paths: usize = 0;
+
+    let mut work_paths: VecDeque<Path2> = VecDeque::new();
+    
+    work_paths.push_back(Path2 {
         small_visit: SmallVisit::None,
         dont_visit: Rc::new(HashSet::new()),
         pos: "start"
-    }];
+    });
 
-    let mut paths: usize = 0;
-
-    walk2(work_paths, &mut paths, tree);
-
-    paths
-}
-
-fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<String>>) {
-    let mut new_work_paths: Vec<Path2> = Vec::new();
-
-    for work_path in work_paths {
+    while let Some(work_path) = work_paths.pop_front() {
         let choices = tree.get(work_path.pos).unwrap();
 
         for choice in choices {
@@ -134,7 +121,7 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<S
                         // Ignore this solution - small cave only visited once
                     }
                     _ => {
-                        *paths += 1;
+                        paths += 1;
                     }
                 }
 
@@ -152,11 +139,13 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<S
                 if work_path.small_visit == SmallVisit::None || work_path.small_visit == SmallVisit::VisitedOnce(choice) {
                     let dont_visit;
     
-                    // Visit twice
                     let small_visit = if work_path.small_visit == SmallVisit::None {
+                        // Visit for the first time
                         dont_visit = work_path.dont_visit.clone();
+                        
                         SmallVisit::VisitedOnce(choice)
                     } else {
+                        // Second visit
                         let mut new_dont_visit = HashSet::with_capacity(work_path.dont_visit.len() + 1);
                         new_dont_visit.clone_from(&*work_path.dont_visit);
                         new_dont_visit.insert(choice);
@@ -165,7 +154,7 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<S
                         SmallVisit::VisitedTwice
                     };
 
-                    new_work_paths.push(Path2 {
+                    work_paths.push_back(Path2 {
                         small_visit, 
                         dont_visit,
                         pos: choice
@@ -178,13 +167,13 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<S
                 new_dont_visit.insert(choice);
                 let dont_visit = Rc::new(new_dont_visit);
 
-                new_work_paths.push(Path2 {
+                work_paths.push_back(Path2 {
                     small_visit: work_path.small_visit.clone(), 
                     dont_visit,
                     pos: choice
                 });
             } else {
-                new_work_paths.push(Path2 {
+                work_paths.push_back(Path2 {
                     small_visit: work_path.small_visit.clone(), 
                     dont_visit: work_path.dont_visit.clone(),
                     pos: choice
@@ -193,9 +182,7 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<S
         }
     }
 
-    if !new_work_paths.is_empty() {
-        walk2(new_work_paths, paths, tree);
-    }
+    paths
 }
 
 fn build_tree(conns: &[Choice]) -> HashMap<String, Vec<String>> {
