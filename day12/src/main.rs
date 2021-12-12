@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     part1(&tree);
     part2(&tree);
 
-    // Write dot file
+    // Write dot file (process with: dot -o output12.svg -T svg output12.dot)
     write_dot(&tree, "output12.dot")?;
 
     Ok(())
@@ -35,7 +35,6 @@ fn part2(tree: &Tree) {
 fn write_dot(tree: &Tree, file: &str) -> Result<(), Box<dyn Error>> {
     let path = Path::new(file);
 
-    // Open a file in write-only mode, returns `io::Result<File>`
     let mut file = File::create(&path)?;
 
     writeln!(&mut file, "digraph caves {{")?;
