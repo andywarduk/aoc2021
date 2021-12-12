@@ -1,9 +1,8 @@
-use std::collections::VecDeque;
-use std::rc::Rc;
 use std::io::{BufRead, BufReader};
 use std::error::Error;
 use std::fs::File;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::rc::Rc;
 use memmap2::Mmap;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -21,34 +20,38 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(tree: &HashMap<String, Vec<String>>) {
-    let paths = count_paths1(tree);
+    let paths = count_paths(tree, false);
 
-    println!("Part 1: Number of paths: {}", paths);
+    println!("Part 1: Number of paths visiting small caves once: {}", paths);
 }
 
 fn part2(tree: &HashMap<String, Vec<String>>) {
-    let paths = count_paths2(tree);
+    let paths = count_paths(tree, true);
 
-    println!("Part 2: Number of paths: {}", paths);
+    println!("Part 2: Number of paths visiting a small cave twice: {}", paths);
 }
 
-#[derive(Clone)]
-struct Path1<'a> {
+struct Path<'a> {
+    small_revisit: bool,
     visited: Rc<HashSet<&'a str>>,
     pos: &'a str
 }
 
-fn count_paths1(tree: &HashMap<String, Vec<String>>) -> usize {
+fn count_paths(tree: &HashMap<String, Vec<String>>, allow_revisit: bool) -> usize {
     let mut paths: usize = 0;
 
-    let mut work_paths: VecDeque<Path1> = VecDeque::new();
+    // Create work queue
+    let mut work_paths: VecDeque<Path> = VecDeque::new();
     
-    work_paths.push_back(Path1 {
+    // Add initial work entry
+    work_paths.push_back(Path {
+        small_revisit: !allow_revisit,
         visited: Rc::new(HashSet::new()),
         pos: "start"
     });
 
     while let Some(work_path) = work_paths.pop_front() {
+        // Get the tree entry
         let choices = tree.get(work_path.pos).unwrap();
 
         for choice in choices {
@@ -57,128 +60,41 @@ fn count_paths1(tree: &HashMap<String, Vec<String>>) -> usize {
                 paths += 1;
                 continue
             }
-            
-            let visited;
+
+            // Variables for new work entry
+            let mut revisit = work_path.small_revisit;
+            let new_visited;
 
             if lowercase_string(choice) {
+                // Small cave
                 if work_path.visited.get(&choice[..]).is_some() {
-                    // Already visited this cave
-                    continue
+                    // Small cave has already been visited
+                    if revisit {
+                        continue
+                    }
+
+                    // Revisit this cave
+                    revisit = true
                 }
 
-                // Mark this cave as visited
-                let mut new_visited = HashSet::with_capacity(work_path.visited.len() + 1);
-                new_visited.clone_from(&*work_path.visited);
-                new_visited.insert(choice);
-                visited = Rc::new(new_visited);
+                // Build new visited hash set
+                let mut new_visited_hashset = HashSet::with_capacity(work_path.visited.len() + 1);
+                new_visited_hashset.clone_from(&*work_path.visited);
+                new_visited_hashset.insert(choice);
+                new_visited = Rc::new(new_visited_hashset);
+
             } else {
-                visited = work_path.visited.clone();
+                // Copy the existing visited hash set (by increasing the ref count)
+                new_visited = work_path.visited.clone();
+
             }
 
-            work_paths.push_back(Path1 {
-                visited,
-                pos: &choice[..]
+            // Add new work unit
+            work_paths.push_back(Path {
+                small_revisit: revisit, 
+                visited: new_visited,
+                pos: choice
             });
-        }
-    }
-
-    paths
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum SmallVisit<'a> {
-    None,
-    VisitedOnce(&'a String),
-    VisitedTwice
-}
-
-#[derive(Debug, Clone)]
-struct Path2<'a> {
-    small_visit: SmallVisit<'a>,
-    dont_visit: Rc<HashSet<&'a str>>,
-    pos: &'a str
-}
-
-fn count_paths2(tree: &HashMap<String, Vec<String>>) -> usize {
-    let mut paths: usize = 0;
-
-    let mut work_paths: VecDeque<Path2> = VecDeque::new();
-    
-    work_paths.push_back(Path2 {
-        small_visit: SmallVisit::None,
-        dont_visit: Rc::new(HashSet::new()),
-        pos: "start"
-    });
-
-    while let Some(work_path) = work_paths.pop_front() {
-        let choices = tree.get(work_path.pos).unwrap();
-
-        for choice in choices {
-            if choice == "end" {
-                // Reached the end
-                match work_path.small_visit {
-                    SmallVisit::VisitedOnce(_) => {
-                        // Ignore this solution - small cave only visited once
-                    }
-                    _ => {
-                        paths += 1;
-                    }
-                }
-
-                continue
-            }
-            
-            if lowercase_string(choice) {
-                if work_path.dont_visit.get(&choice[..]).is_some() {
-                    continue
-                }
-
-                // Emit two paths -
-                // one where this small cave is visited twice and
-                // one where the small cave is visited once
-                if work_path.small_visit == SmallVisit::None || work_path.small_visit == SmallVisit::VisitedOnce(choice) {
-                    let dont_visit;
-    
-                    let small_visit = if work_path.small_visit == SmallVisit::None {
-                        // Visit for the first time
-                        dont_visit = work_path.dont_visit.clone();
-                        
-                        SmallVisit::VisitedOnce(choice)
-                    } else {
-                        // Second visit
-                        let mut new_dont_visit = HashSet::with_capacity(work_path.dont_visit.len() + 1);
-                        new_dont_visit.clone_from(&*work_path.dont_visit);
-                        new_dont_visit.insert(choice);
-                        dont_visit = Rc::new(new_dont_visit);
-
-                        SmallVisit::VisitedTwice
-                    };
-
-                    work_paths.push_back(Path2 {
-                        small_visit, 
-                        dont_visit,
-                        pos: choice
-                    });
-                };
-
-                // Visit once
-                let mut new_dont_visit = HashSet::with_capacity(work_path.dont_visit.len() + 1);
-                new_dont_visit.clone_from(&*work_path.dont_visit);
-                new_dont_visit.insert(choice);
-                let dont_visit = Rc::new(new_dont_visit);
-
-                work_paths.push_back(Path2 {
-                    small_visit: work_path.small_visit.clone(), 
-                    dont_visit,
-                    pos: choice
-                });
-            } else {
-                work_paths.push_back(Path2 {
-                    small_visit: work_path.small_visit.clone(), 
-                    dont_visit: work_path.dont_visit.clone(),
-                    pos: choice
-                });
-            }
         }
     }
 
@@ -209,9 +125,7 @@ struct Choice {
     to: String
 }
 
-type ParseResult = Vec<Choice>;
-
-fn load_input(file: &str) -> Result<ParseResult, Box<dyn Error>> {
+fn load_input(file: &str) -> Result<Vec<Choice>, Box<dyn Error>> {
     // Open the file
     let file = File::open(file)?;
 
@@ -225,7 +139,7 @@ fn load_input(file: &str) -> Result<ParseResult, Box<dyn Error>> {
     load_buf(mmap.as_ref())
 }
 
-fn load_buf(buf: &[u8]) -> Result<ParseResult, Box<dyn Error>> {
+fn load_buf(buf: &[u8]) -> Result<Vec<Choice>, Box<dyn Error>> {
     // Create buf reader for the buffer
     let buf_reader = BufReader::new(buf);
 
@@ -278,9 +192,9 @@ b-end";
     // Build tree
     let tree = build_tree(&conns);
 
-    let paths = count_paths1(&tree);
+    let paths = count_paths(&tree, false);
     assert_eq!(paths, 10);
 
-    let paths = count_paths2(&tree);
+    let paths = count_paths(&tree, true);
     assert_eq!(paths, 36);
 }
