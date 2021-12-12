@@ -1,50 +1,83 @@
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::error::Error;
 use std::fs::File;
+use std::path::Path;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::rc::Rc;
 use memmap2::Mmap;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Load the input file
-    let conns = load_input("input12.txt")?;
-
-    // Build tree
-    let tree = build_tree(&conns);
+    let tree = load_input("input12.txt")?;
 
     // Run parts
     part1(&tree);
     part2(&tree);
 
+    // Write dot file
+    write_dot(&tree, "output12.dot")?;
+
     Ok(())
 }
 
-fn part1(tree: &HashMap<String, Vec<String>>) {
+fn part1(tree: &Tree) {
     let paths = count_paths(tree, false);
 
     println!("Part 1: Number of paths visiting small caves once: {}", paths);
 }
 
-fn part2(tree: &HashMap<String, Vec<String>>) {
+fn part2(tree: &Tree) {
     let paths = count_paths(tree, true);
 
     println!("Part 2: Number of paths visiting a small cave twice: {}", paths);
 }
 
-struct Path<'a> {
+fn write_dot(tree: &Tree, file: &str) -> Result<(), Box<dyn Error>> {
+    let path = Path::new(file);
+
+    // Open a file in write-only mode, returns `io::Result<File>`
+    let mut file = File::create(&path)?;
+
+    writeln!(&mut file, "graph caves {{")?;
+
+    // Build edges
+    let mut edges: HashSet<Vec<&String>> = HashSet::new();
+
+    for (from, tos) in tree {
+        for to in tos {
+            let mut edge = vec![from, to];
+            edge.sort();
+            edges.insert(edge);
+        }
+    }
+
+    for edge in edges {
+        writeln!(&mut file, "\t{} -- {}", edge[0], edge[1])?;
+    }
+
+    writeln!(&mut file, "}}")?;
+
+    Ok(())
+}
+
+struct CavePath<'a> {
     small_revisit: bool,
     visited: Rc<HashSet<&'a str>>,
     pos: &'a str
 }
 
-fn count_paths(tree: &HashMap<String, Vec<String>>, allow_revisit: bool) -> usize {
+fn count_paths(tree: &Tree, allow_revisit: bool) -> usize {
     let mut paths: usize = 0;
 
+    let is_small_cave = |name: &str| -> bool {
+        name.chars().all(char::is_lowercase)
+    };
+
     // Create work queue
-    let mut work_paths: VecDeque<Path> = VecDeque::new();
+    let mut work_paths: VecDeque<CavePath> = VecDeque::new();
     
     // Add initial work entry
-    work_paths.push_back(Path {
+    work_paths.push_back(CavePath {
         small_revisit: !allow_revisit,
         visited: Rc::new(HashSet::new()),
         pos: "start"
@@ -55,44 +88,48 @@ fn count_paths(tree: &HashMap<String, Vec<String>>, allow_revisit: bool) -> usiz
         let choices = tree.get(work_path.pos).unwrap();
 
         for choice in choices {
-            if choice == "end" {
+            if *choice == "end" {
                 // Reached the end
                 paths += 1;
                 continue
             }
 
             // Variables for new work entry
-            let mut revisit = work_path.small_revisit;
-            let new_visited;
+            let mut small_revisit = work_path.small_revisit;
+            let visited;
 
-            if lowercase_string(choice) {
+            if is_small_cave(choice) {
                 // Small cave
-                if work_path.visited.get(&choice[..]).is_some() {
+
+                // Already visited?
+                if work_path.visited.contains(&choice[..]) {
                     // Small cave has already been visited
-                    if revisit {
+                    if small_revisit {
                         continue
                     }
 
                     // Revisit this cave
-                    revisit = true
+                    small_revisit = true
                 }
 
                 // Build new visited hash set
                 let mut new_visited_hashset = HashSet::with_capacity(work_path.visited.len() + 1);
                 new_visited_hashset.clone_from(&*work_path.visited);
                 new_visited_hashset.insert(choice);
-                new_visited = Rc::new(new_visited_hashset);
+                visited = Rc::new(new_visited_hashset);
 
             } else {
+                // Large cave
+
                 // Copy the existing visited hash set (by increasing the ref count)
-                new_visited = work_path.visited.clone();
+                visited = work_path.visited.clone();
 
             }
 
             // Add new work unit
-            work_paths.push_back(Path {
-                small_revisit: revisit, 
-                visited: new_visited,
+            work_paths.push_back(CavePath {
+                small_revisit, 
+                visited,
                 pos: choice
             });
         }
@@ -101,31 +138,9 @@ fn count_paths(tree: &HashMap<String, Vec<String>>, allow_revisit: bool) -> usiz
     paths
 }
 
-fn build_tree(conns: &[Choice]) -> HashMap<String, Vec<String>> {
-    let mut conn_choices: HashMap<String, Vec<String>> = HashMap::new();
+type Tree = HashMap<String, Vec<String>>;
 
-    for conn in conns {
-        if let Some(choices) = conn_choices.get_mut(&conn.from) {
-            choices.push(conn.to.clone());
-        } else {
-            conn_choices.insert(conn.from.clone(), vec![conn.to.clone()]);
-        }
-    }
-
-    conn_choices
-}
-
-#[inline]
-fn lowercase_string(string: &str) -> bool {
-    string.chars().all(char::is_lowercase)
-}
-
-struct Choice {
-    from: String,
-    to: String
-}
-
-fn load_input(file: &str) -> Result<Vec<Choice>, Box<dyn Error>> {
+fn load_input(file: &str) -> Result<Tree, Box<dyn Error>> {
     // Open the file
     let file = File::open(file)?;
 
@@ -139,12 +154,22 @@ fn load_input(file: &str) -> Result<Vec<Choice>, Box<dyn Error>> {
     load_buf(mmap.as_ref())
 }
 
-fn load_buf(buf: &[u8]) -> Result<Vec<Choice>, Box<dyn Error>> {
+fn load_buf(buf: &[u8]) -> Result<Tree, Box<dyn Error>> {
     // Create buf reader for the buffer
     let buf_reader = BufReader::new(buf);
 
     // Create vector
-    let mut conns = Vec::new();
+    let mut tree: Tree = HashMap::new();
+
+    let add_tree = |tree: &mut Tree, from: &str, to: &str| {
+        if to != "start" && from != "end" {
+            if let Some(tree_ent) = tree.get_mut(from) {
+                tree_ent.push(String::from(to));
+            } else {
+                tree.insert(String::from(from), vec![String::from(to)]);
+            }
+        }
+    };
 
     // Iterate lines
     for line_res in buf_reader.lines() {
@@ -153,26 +178,15 @@ fn load_buf(buf: &[u8]) -> Result<Vec<Choice>, Box<dyn Error>> {
         if !line.is_empty() {
             let mut conn_iter = line.split('-');
 
-            let choice1 = conn_iter.next().unwrap().to_string();
-            let choice2 = conn_iter.next().unwrap().to_string();
+            let choice1 = conn_iter.next().unwrap();
+            let choice2 = conn_iter.next().unwrap();
 
-            if choice2 != "start" {
-                conns.push(Choice {
-                    from: choice1.clone(),
-                    to: choice2.clone(),
-                });
-            }
-
-            if choice1 != "start" {
-                conns.push(Choice {
-                    from: choice2.clone(),
-                    to: choice1.clone(),
-                });
-            }
+            add_tree(&mut tree, choice1, choice2);
+            add_tree(&mut tree, choice2, choice1);
         }
     }
    
-    Ok(conns)
+    Ok(tree)
 }
 
 #[test]
@@ -187,10 +201,7 @@ A-end
 b-end";
 
     // Load connections
-    let conns = load_buf(paths.as_bytes()).unwrap();
-
-    // Build tree
-    let tree = build_tree(&conns);
+    let tree = load_buf(paths.as_bytes()).unwrap();
 
     let paths = count_paths(&tree, false);
     assert_eq!(paths, 10);

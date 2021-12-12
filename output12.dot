@@ -1,0 +1,24 @@
+graph caves {
+	end -- zs
+	HW -- gv
+	WO -- iu
+	HW -- end
+	gv -- start
+	HW -- iu
+	DP -- by
+	WO -- end
+	SK -- iu
+	WO -- gv
+	HW -- zt
+	DP -- zs
+	HW -- zs
+	WO -- zs
+	gv -- zt
+	start -- zt
+	WO -- zt
+	SK -- zs
+	DP -- gv
+	DP -- iu
+	WO -- start
+	QJ -- zs
+}
