@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::io::{BufRead, BufReader};
 use std::error::Error;
 use std::fs::File;
@@ -31,15 +32,15 @@ fn part2(tree: &HashMap<String, Vec<String>>) {
 }
 
 #[derive(Clone)]
-struct Path1 {
-    visited: HashSet<String>,
-    pos: String
+struct Path1<'a> {
+    visited: Rc<HashSet<&'a str>>,
+    pos: &'a str
 }
 
 fn count_paths1(tree: &HashMap<String, Vec<String>>) -> usize {
     let work_paths: Vec<Path1> = vec![Path1 {
-        visited: HashSet::new(),
-        pos: "start".to_string()
+        visited: Rc::new(HashSet::new()),
+        pos: "start"
     }];
 
     let mut paths: usize = 0;
@@ -53,7 +54,7 @@ fn walk1(work_paths: Vec<Path1>, paths: &mut usize, tree: &HashMap<String, Vec<S
     let mut new_work_paths: Vec<Path1> = Vec::new();
 
     for work_path in work_paths {
-        let choices = tree.get(&work_path.pos).unwrap();
+        let choices = tree.get(work_path.pos).unwrap();
 
         for choice in choices {
             if choice == "end" {
@@ -62,21 +63,26 @@ fn walk1(work_paths: Vec<Path1>, paths: &mut usize, tree: &HashMap<String, Vec<S
                 continue
             }
             
-            let mut visited = work_path.visited.clone();
+            let visited;
 
             if lowercase_string(choice) {
-                if work_path.visited.get(choice).is_some() {
+                if work_path.visited.get(&choice[..]).is_some() {
                     // Already visited this cave
                     continue
-                } else {
-                    // Mark this cave as visited
-                    visited.insert(choice.clone());
                 }
+
+                // Mark this cave as visited
+                let mut new_visited = HashSet::with_capacity(work_path.visited.len() + 1);
+                new_visited.clone_from(&*work_path.visited);
+                new_visited.insert(choice);
+                visited = Rc::new(new_visited);
+            } else {
+                visited = work_path.visited.clone();
             }
 
             new_work_paths.push(Path1 {
                 visited,
-                pos: choice.clone()
+                pos: &choice[..]
             });
         }
     }
@@ -87,24 +93,24 @@ fn walk1(work_paths: Vec<Path1>, paths: &mut usize, tree: &HashMap<String, Vec<S
 }
 
 #[derive(Debug, Clone, PartialEq)]
-enum SmallVisit {
+enum SmallVisit<'a> {
     None,
-    VisitedOnce(String),
+    VisitedOnce(&'a String),
     VisitedTwice
 }
 
 #[derive(Debug, Clone)]
-struct Path2 {
-    small_visit: SmallVisit,
-    dont_visit: HashSet<String>,
-    pos: String
+struct Path2<'a> {
+    small_visit: SmallVisit<'a>,
+    dont_visit: Rc<HashSet<&'a str>>,
+    pos: &'a str
 }
 
 fn count_paths2(tree: &HashMap<String, Vec<String>>) -> usize {
     let work_paths: Vec<Path2> = vec![Path2 {
         small_visit: SmallVisit::None,
-        dont_visit: HashSet::new(),
-        pos: "start".to_string()
+        dont_visit: Rc::new(HashSet::new()),
+        pos: "start"
     }];
 
     let mut paths: usize = 0;
@@ -118,7 +124,7 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<S
     let mut new_work_paths: Vec<Path2> = Vec::new();
 
     for work_path in work_paths {
-        let choices = tree.get(&work_path.pos).unwrap();
+        let choices = tree.get(work_path.pos).unwrap();
 
         for choice in choices {
             if choice == "end" {
@@ -136,45 +142,52 @@ fn walk2(work_paths: Vec<Path2>, paths: &mut usize, tree: &HashMap<String, Vec<S
             }
             
             if lowercase_string(choice) {
-                if work_path.dont_visit.get(choice).is_some() {
+                if work_path.dont_visit.get(&choice[..]).is_some() {
                     continue
                 }
 
                 // Emit two paths -
                 // one where this small cave is visited twice and
                 // one where the small cave is visited once
-                if work_path.small_visit == SmallVisit::None || work_path.small_visit == SmallVisit::VisitedOnce(choice.clone()) {
-                    let mut dont_visit = work_path.dont_visit.clone();
-
+                if work_path.small_visit == SmallVisit::None || work_path.small_visit == SmallVisit::VisitedOnce(choice) {
+                    let dont_visit;
+    
                     // Visit twice
                     let small_visit = if work_path.small_visit == SmallVisit::None {
-                        SmallVisit::VisitedOnce(choice.clone())
+                        dont_visit = work_path.dont_visit.clone();
+                        SmallVisit::VisitedOnce(choice)
                     } else {
-                        dont_visit.insert(choice.clone());
+                        let mut new_dont_visit = HashSet::with_capacity(work_path.dont_visit.len() + 1);
+                        new_dont_visit.clone_from(&*work_path.dont_visit);
+                        new_dont_visit.insert(choice);
+                        dont_visit = Rc::new(new_dont_visit);
+
                         SmallVisit::VisitedTwice
                     };
 
                     new_work_paths.push(Path2 {
                         small_visit, 
                         dont_visit,
-                        pos: choice.clone()
+                        pos: choice
                     });
                 };
 
                 // Visit once
-                let mut dont_visit = work_path.dont_visit.clone();
-                dont_visit.insert(choice.clone());
+                let mut new_dont_visit = HashSet::with_capacity(work_path.dont_visit.len() + 1);
+                new_dont_visit.clone_from(&*work_path.dont_visit);
+                new_dont_visit.insert(choice);
+                let dont_visit = Rc::new(new_dont_visit);
 
                 new_work_paths.push(Path2 {
                     small_visit: work_path.small_visit.clone(), 
                     dont_visit,
-                    pos: choice.clone()
+                    pos: choice
                 });
             } else {
                 new_work_paths.push(Path2 {
                     small_visit: work_path.small_visit.clone(), 
                     dont_visit: work_path.dont_visit.clone(),
-                    pos: choice.clone()
+                    pos: choice
                 });
             }
         }
@@ -199,6 +212,7 @@ fn build_tree(conns: &[Choice]) -> HashMap<String, Vec<String>> {
     conn_choices
 }
 
+#[inline]
 fn lowercase_string(string: &str) -> bool {
     string.chars().all(char::is_lowercase)
 }
