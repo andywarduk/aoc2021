@@ -51,23 +51,12 @@ fn part2(dots: &[Coord], folds: &[Fold]) {
 }
 
 fn fold_page(dots: HashSet<Coord>, fold: &Fold) -> HashSet<Coord> {
-    let new_dots: HashSet<Coord> = dots.iter().map(|coord| {
-        match fold.axis {
-            'x' => {
-                if coord.x > fold.pos {
-                    Coord::new(fold.pos - (coord.x - fold.pos), coord.y)
-                } else {
-                    coord.clone()
-                }
-            }
-            'y' => {
-                if coord.y > fold.pos {
-                    Coord::new(coord.x, fold.pos - (coord.y - fold.pos))
-                } else {
-                    coord.clone()
-                }
-            }
-            _ => panic!("Invalid axis")
+    let calc_fold = |pos: u16, coord: u16| if coord > pos { pos - (coord - pos) } else { coord };
+
+    let new_dots: HashSet<Coord> = dots.into_iter().map(|coord| {
+        match fold {
+            Fold::XAxis(pos) => Coord::new(calc_fold(*pos, coord.x), coord.y),
+            Fold::YAxis(pos) => Coord::new(coord.x, calc_fold(*pos, coord.y))
         }
     }).collect();
 
@@ -81,21 +70,29 @@ struct Coord {
 }
 
 impl Coord {
+
     fn new(x: u16, y: u16) -> Self {
         Coord {x, y}
     }
+    
 }
 
 #[derive(Debug, PartialEq)]
-struct Fold {
-    axis: char,
-    pos: u16
+enum Fold {
+    XAxis(u16),
+    YAxis(u16),
 }
 
 impl Fold {
+
     fn new(axis: char, pos: u16) -> Self {
-        Fold {axis, pos}
+        match axis {
+            'x' => Fold::XAxis(pos),
+            'y' => Fold::YAxis(pos),
+            _ => panic!("Invalid axis")
+        }
     }
+
 }
 
 type ParseResult = (Vec<Coord>, Vec<Fold>);
@@ -204,7 +201,7 @@ mod tests {
     fn test_parser() {
         let result = gen_input("1,2", "fold along x=1");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), (vec![Coord::new(1, 2)], vec![Fold::new('x', 1)]));
+        assert_eq!(result.unwrap(), (vec![Coord::new(1, 2)], vec![Fold::XAxis(1)]));
 
         let result = gen_input("1", "fold along x=1");
         assert!(result.is_err());
