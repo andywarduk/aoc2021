@@ -1,11 +1,18 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{BufRead, BufReader};
 use std::error::Error;
 use std::fs::File;
 use std::fmt;
 use memmap2::Mmap;
 use itertools::Itertools;
-use num_format::{SystemLocale, ToFormattedString, Format};
+use num_format::{SystemLocale, ToFormattedString, Format as NumFormat};
+
+type Elem = char;
+type Pair = (Elem, Elem);
+type Subs = HashMap<Pair, Elem>;
+type Count = u64;
+type PairCount = HashMap<Pair, Count>;
+type FreqMap = BTreeMap<Elem, Count>;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let locale = SystemLocale::default().unwrap();
@@ -20,34 +27,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn part1<F: Format>(polymer: &str, subs: &Subs, locale: &F) {
+fn part1<F: NumFormat>(polymer: &str, subs: &Subs, locale: &F) {
     let freq_map = run_sub(polymer, subs, 10);
     let (min_cnt, max_cnt) = freq_min_max(&freq_map);
 
-    print!("Part 1: frequencies:");
-    dump_freq_map(&freq_map, locale);
-    println!();
-
-    println!("        max {}, min {}, difference: {}",
-        max_cnt.to_formatted_string(locale), min_cnt.to_formatted_string(locale),
-        max_cnt - min_cnt);
+    println!("Part 1: frequencies:");
+    dump_freq_map(12, &freq_map, locale);
+ 
+    println!("        max {}; min {}", max_cnt.to_formatted_string(locale), min_cnt.to_formatted_string(locale));
+    println!("        difference (answer): {}", max_cnt - min_cnt);
 }
 
-fn part2<F: Format>(polymer: &str, subs: &Subs, locale: &F) {
+fn part2<F: NumFormat>(polymer: &str, subs: &Subs, locale: &F) {
     let freq_map = run_sub(polymer, subs, 40);
     let (min_cnt, max_cnt) = freq_min_max(&freq_map);
 
-    print!("Part 2: frequencies:");
-    dump_freq_map(&freq_map, locale);
-    println!();
-
-    println!("        max {}, min {}, difference: {}",
-        max_cnt.to_formatted_string(locale), min_cnt.to_formatted_string(locale),
-        max_cnt - min_cnt);
+    println!("Part 2: frequencies:");
+    dump_freq_map(12, &freq_map, locale);
+ 
+    println!("        max {}; min {}", max_cnt.to_formatted_string(locale), min_cnt.to_formatted_string(locale));
+    println!("        difference (answer): {}", max_cnt - min_cnt);
 }
 
-fn run_sub(polymer: &str, subs: &Subs, iters: usize) -> HashMap<char, usize> {
-    let mut counts: HashMap<(char, char), usize> = HashMap::new();
+fn run_sub(polymer: &str, subs: &Subs, iters: usize) -> FreqMap {
+    let mut counts = PairCount::new();
 
     // Build initial counts hash map
     for (c1, c2) in polymer.chars().tuple_windows() {
@@ -55,21 +58,21 @@ fn run_sub(polymer: &str, subs: &Subs, iters: usize) -> HashMap<char, usize> {
     }
 
     for _ in 0..iters {
-        let mut new_counts: HashMap<(char, char), usize> = HashMap::with_capacity(subs.len());
+        let mut new_counts = PairCount::with_capacity(subs.len());
 
         // Build new counts hashmap
-        for (pair, &count) in &counts {
+        for (pair @ &(c1, c2), &count) in &counts {
             let &sub = subs.get(pair).unwrap();
 
-            *new_counts.entry((pair.0, sub)).or_default() += count;
-            *new_counts.entry((sub, pair.1)).or_default() += count;
+            *new_counts.entry((c1, sub)).or_default() += count;
+            *new_counts.entry((sub, c2)).or_default() += count;
         }
 
         counts = new_counts;
     }
 
     // Build character frequency map
-    let mut freq_map: HashMap<char, usize> = HashMap::new();
+    let mut freq_map = FreqMap::new();
     
     *freq_map.entry(polymer.chars().next().unwrap()).or_default() += 1;
 
@@ -80,7 +83,7 @@ fn run_sub(polymer: &str, subs: &Subs, iters: usize) -> HashMap<char, usize> {
     freq_map
 }
 
-fn freq_min_max(freq_map: &HashMap<char, usize>) -> (usize, usize) {
+fn freq_min_max(freq_map: &FreqMap) -> (Count, Count) {
     // Get min and max frequency entries
     let max_cnt = freq_map.iter().map(|(_, &cnt)| cnt).max().unwrap();
     let min_cnt = freq_map.iter().map(|(_, &cnt)| cnt).min().unwrap();
@@ -88,13 +91,16 @@ fn freq_min_max(freq_map: &HashMap<char, usize>) -> (usize, usize) {
     (min_cnt, max_cnt)
 }
 
-fn dump_freq_map<F: Format>(freq_map: &HashMap<char, usize>, locale: &F) {
-    for (&c, &cnt) in freq_map {
-        print!(" {}={}", c, cnt.to_formatted_string(locale));
+fn dump_freq_map<F: NumFormat>(indent: usize, freq_map: &FreqMap, locale: &F) {
+    let strings: Vec<_> = freq_map.iter().map(|(&c, &cnt)| (c, cnt.to_formatted_string(locale))).collect();
+
+    let max_len = strings.iter().map(|(_, cntstr)| cntstr.len()).max().unwrap();
+
+    for (c, cntstr) in strings {
+        println!("{:indent$}{} = {:>len$}", "", c, cntstr, indent = indent, len = max_len)
     }
 }
 
-type Subs = HashMap<(char, char), char>;
 type ParseResult = (String, Subs);
 
 #[derive(Debug, PartialEq)]
