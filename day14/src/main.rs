@@ -48,7 +48,7 @@ fn part2<F: NumFormat>(polymer: &str, subs: &Subs, locale: &F) {
 
     let (min_cnt, max_cnt) = freq_min_max(&freq_map);
 
-    println!("Part 1: frequencies after {} iterations:", ITERS);
+    println!("Part 2: frequencies after {} iterations:", ITERS);
     dump_freq_map(12, &freq_map, locale);
  
     println!("        max {}; min {}", max_cnt.to_formatted_string(locale), min_cnt.to_formatted_string(locale));
