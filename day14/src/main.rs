@@ -28,10 +28,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1<F: NumFormat>(polymer: &str, subs: &Subs, locale: &F) {
-    let freq_map = run_sub(polymer, subs, 10);
+    const ITERS: usize = 10;
+
+    let freq_map = run_sub(polymer, subs, ITERS);
+
     let (min_cnt, max_cnt) = freq_min_max(&freq_map);
 
-    println!("Part 1: frequencies:");
+    println!("Part 1: frequencies after {} iterations:", ITERS);
     dump_freq_map(12, &freq_map, locale);
  
     println!("        max {}; min {}", max_cnt.to_formatted_string(locale), min_cnt.to_formatted_string(locale));
@@ -39,10 +42,13 @@ fn part1<F: NumFormat>(polymer: &str, subs: &Subs, locale: &F) {
 }
 
 fn part2<F: NumFormat>(polymer: &str, subs: &Subs, locale: &F) {
+    const ITERS: usize = 40;
+
     let freq_map = run_sub(polymer, subs, 40);
+
     let (min_cnt, max_cnt) = freq_min_max(&freq_map);
 
-    println!("Part 2: frequencies:");
+    println!("Part 1: frequencies after {} iterations:", ITERS);
     dump_freq_map(12, &freq_map, locale);
  
     println!("        max {}; min {}", max_cnt.to_formatted_string(locale), min_cnt.to_formatted_string(locale));
@@ -92,12 +98,20 @@ fn freq_min_max(freq_map: &FreqMap) -> (Count, Count) {
 }
 
 fn dump_freq_map<F: NumFormat>(indent: usize, freq_map: &FreqMap, locale: &F) {
-    let strings: Vec<_> = freq_map.iter().map(|(&c, &cnt)| (c, cnt.to_formatted_string(locale))).collect();
+    // Build first column output vector
+    let output1: Vec<_> = freq_map.iter().map(|(&c, &cnt)| (c, cnt, cnt.to_formatted_string(locale))).collect();
 
-    let max_len = strings.iter().map(|(_, cntstr)| cntstr.len()).max().unwrap();
+    // Build second column output vector
+    let mut output2: Vec<_> = output1.iter().collect();
+    output2.sort_by_key(|&(_, cnt, _)| cnt);
 
-    for (c, cntstr) in strings {
-        println!("{:indent$}{} = {:>len$}", "", c, cntstr, indent = indent, len = max_len)
+    // Work out max length of formatted number
+    let max_len = output1.iter().map(|(.., cntstr)| cntstr.len()).max().unwrap();
+
+    // Output the tables
+    for ((c1, _, cntstr1), (c2, _, cntstr2)) in output1.iter().zip(output2.iter()) {
+        println!("{:indent$}{} = {:>len$}      {} = {:>len$}",
+            "", c1, cntstr1, c2, cntstr2, indent = indent, len = max_len)
     }
 }
 
@@ -170,7 +184,7 @@ fn load_buf(buf: &[u8]) -> Result<ParseResult, Box<dyn Error>> {
                 return Err(ParseError::Expect1SubDstChar.into());
             }
 
-            let src = (parts[0].chars().next().unwrap(), parts[0].chars().nth(1).unwrap());
+            let src = parts[0].chars().next_tuple().unwrap();
             let dst = parts[1].chars().next().unwrap();
 
             subs.insert(src, dst);
