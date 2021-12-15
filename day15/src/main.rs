@@ -1,4 +1,4 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::cmp::Reverse;
 use std::io::{BufRead, BufReader};
 use std::error::Error;
@@ -36,57 +36,61 @@ fn part2(risks: &[Vec<Risk>]) {
     println!("Part 2: Lowest risk: {:?}", lowest_risk);
 }
 
+fn neighbours(x: Coord, y: Coord, max_x: Coord, max_y: Coord) -> impl Iterator<Item = Coords> {
+    let mut num = 0;
+
+    std::iter::from_fn(move || {
+        loop {
+            num += 1;
+
+            match num {
+                1 => if x < max_x { return Some((x + 1, y)) }
+                2 => if y < max_y { return Some((x, y + 1)); }
+                3 => if x > 0 { return Some((x - 1, y)); }
+                4 => if y > 0 { return Some((x, y - 1)); }
+                _ => return None
+            }
+        }
+    })
+}
+
 fn find_lowest_risk(risks: &[Vec<Risk>]) -> PathRisk {
     let width = risks[0].len();
     let height = risks.len();
+    let max_x = (width - 1) as Coord;
+    let max_y = (height - 1) as Coord;
 
-    let mut prev: HashMap<Coords, Coords> = HashMap::new();
-    let mut queue: PriorityQueue<Coords, Reverse<PathRisk>> = PriorityQueue::with_capacity(width * height);
+    let mut prev: HashMap<Coords, Coords> = HashMap::with_capacity(width * height);
+    let mut queue: PriorityQueue<Coords, Reverse<PathRisk>> = PriorityQueue::with_capacity(width + height);
 
-    for y in 0..height {
-        for x in 0..width {
-            let dist: PathRisk = if x == 0 && y == 0 { 0 } else { PathRisk::MAX };
-
-            queue.push((x as Coord, y as Coord), Reverse(dist));
-        }
-    }
-
-    let neighbours = |x, y| {
-        let mut neigh = Vec::with_capacity(4);
-
-        neigh.push((x + 1, y));
-        neigh.push((x, y + 1));
-
-        if x > 0 {
-            neigh.push((x - 1, y));
-        }
-
-        if y > 0 {
-            neigh.push((x, y - 1));
-        }
-
-        neigh
-    };
+    queue.push((0, 0), Reverse(0));
+    prev.insert((0, 0), (Coord::MAX, Coord::MAX));
 
     while let Some((item1 @ (x1, y1), Reverse(dist))) = queue.pop() {
-        for item2 @ (x2, y2) in neighbours(x1, y1) {
-            if let Some((_, &Reverse(cur_dist))) = queue.get(&item2) {
+        for item2 @ (x2, y2) in neighbours(x1, y1, max_x, max_y) {
+            if prev.get(&item2).is_none() {
                 let calc_dist = dist + risks[y2 as usize][x2 as usize] as PathRisk;
-                if calc_dist < cur_dist {
-                    queue.change_priority(&item2, Reverse(calc_dist));
-                    *prev.entry(item2).or_default() = item1;
-                }
+                queue.push(item2, Reverse(calc_dist));
+                prev.insert(item2, item1);
             }
         }
     }
 
     // Walk backwards
-    let mut cur_pos = ((width - 1) as Coord, (height - 1) as Coord);
     let mut risk: PathRisk = 0;
 
-    while cur_pos != (0, 0) {
-        risk += risks[cur_pos.1 as usize][cur_pos.0 as usize] as PathRisk;
-        cur_pos = *prev.get(&cur_pos).unwrap();
+    let mut pos = (max_x, max_y);
+
+    loop {
+        let (x, y) = pos;
+
+        if x == 0 && y == 0 {
+            break
+        }
+
+        risk += risks[y as usize][x as usize] as PathRisk;
+
+        pos = *prev.get(&pos).unwrap();
     }
 
     risk
