@@ -389,6 +389,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "day15"
+version = "0.1.0"
+dependencies = [
+ "memmap2",
+ "priority-queue",
+]
+
+[[package]]
 name = "deflate"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -662,6 +670,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
+name = "indexmap"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
+dependencies = [
+ "autocfg",
+ "hashbrown 0.11.2",
+]
+
+[[package]]
 name = "itertools"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -818,6 +836,16 @@ dependencies = [
  "deflate",
  "encoding",
  "miniz_oxide",
+]
+
+[[package]]
+name = "priority-queue"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00ba480ac08d3cfc40dea10fd466fd2c14dee3ea6fc7873bc4079eda2727caf0"
+dependencies = [
+ "autocfg",
+ "indexmap",
 ]
 
 [[package]]
