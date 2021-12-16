@@ -354,6 +354,8 @@ mod tests {
         let data = load_buf(TEST_INPUT1_1.as_bytes()).unwrap();
         let tree = parse_data(&data);
 
+        assert_eq!(format!("{}", tree), "2021");
+
         assert_eq!(tree, Packet {
             version: 6, content: PacketType::Literal(2021)
         });
@@ -363,6 +365,8 @@ mod tests {
     fn test1_2() {
         let data = load_buf(TEST_INPUT1_2.as_bytes()).unwrap();
         let tree = parse_data(&data);
+
+        assert_eq!(format!("{}", tree), "(10 < 20 ? 1 : 0)");
 
         assert_eq!(tree, Packet {
             version: 1, content: PacketType::Lt(vec![
@@ -377,6 +381,8 @@ mod tests {
         let data = load_buf(TEST_INPUT1_3.as_bytes()).unwrap();
         let tree = parse_data(&data);
 
+        assert_eq!(format!("{}", tree), "max(1, 2, 3)");
+
         assert_eq!(tree, Packet {
             version: 7, content: PacketType::Max(vec![
                 Packet { version: 2, content: PacketType::Literal(1) },
@@ -390,6 +396,8 @@ mod tests {
     fn test1_4() {
         let data = load_buf(TEST_INPUT1_4.as_bytes()).unwrap();
         let tree = parse_data(&data);
+
+        assert_eq!(format!("{}", tree), "15");
 
         assert_eq!(tree, Packet {
             version: 4, content: PacketType::Min(vec![
@@ -408,6 +416,8 @@ mod tests {
     fn test1_5() {
         let data = load_buf(TEST_INPUT1_5.as_bytes()).unwrap();
         let tree = parse_data(&data);
+
+        assert_eq!(format!("{}", tree), "((10 + 11) + (12 + 13))");
 
         assert_eq!(tree, Packet {
             version: 3, content: PacketType::Sum(vec![
@@ -430,6 +440,8 @@ mod tests {
         let data = load_buf(TEST_INPUT1_6.as_bytes()).unwrap();
         let tree = parse_data(&data);
 
+        assert_eq!(format!("{}", tree), "((10 + 11) + (12 + 13))");
+
         assert_eq!(tree, Packet {
             version: 6, content: PacketType::Sum(vec![
                 Packet { version: 0, content: PacketType::Sum(vec![
@@ -450,6 +462,8 @@ mod tests {
     fn test1_7() {
         let data = load_buf(TEST_INPUT1_7.as_bytes()).unwrap();
         let tree = parse_data(&data);
+
+        assert_eq!(format!("{}", tree), "(6 + 6 + 12 + 15 + 15)");
 
         assert_eq!(tree, Packet {
             version: 5, content: PacketType::Sum(vec![
