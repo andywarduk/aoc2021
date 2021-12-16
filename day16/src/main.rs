@@ -11,7 +11,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Build tree
     let tree = parse_data(&data);
 
-    println!("Parse tree: {}", tree);
+    // Print tree
+    println!("Parse tree:\n{:#}\n", tree);
+    println!("Compact: {}\n", tree);
 
     // Run parts
     part1(&tree);
@@ -45,20 +47,47 @@ enum PacketType {
 impl std::fmt::Display for PacketType {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        let joined = |values: &Vec<Packet>, join: &str| {
-            values.iter().map(|v| format!("{}", v)).collect::<Vec<String>>().join(join)
+        let padding = f.width().unwrap_or(0);
+        let alternate = f.alternate() || f.width().is_some();
+
+        let joined = |values: &Vec<Packet>, pre: &str, post: &str, join: &str| {            
+            if values.len() > 1 {
+                if alternate {
+                    let join_str = values.iter().map(|v| format!("{:>pad$}", v, pad = padding + 2)).collect::<Vec<String>>().join(join);
+                    let pad1: String = vec![' '; padding].iter().collect();
+                    let pad2: String = vec![' '; padding + 2].iter().collect();
+                    format!("{}\n{}{}\n{}{}", pre, pad2, join_str, pad1, post)
+                } else {
+                    let join_str = values.iter().map(|v| format!("{}", v)).collect::<Vec<String>>().join(join);
+                    format!("{}{}{}", pre, join_str, post)
+                }
+            } else {
+                format!("{}", values[0])
+            }
         };
 
-        match self {
-            PacketType::Sum(values) => write!(f, "({})", joined(values, " + ")),
-            PacketType::Product(values) => write!(f, "({})", joined(values, " * ")),
-            PacketType::Min(values) => write!(f, "min({})", joined(values, ", ")),
-            PacketType::Max(values) => write!(f, "max({})", joined(values, ", ")),
-            PacketType::Literal(num) => write!(f, "{}", num),
-            PacketType::Gt(values) => write!(f, "({} > {} ? 1 : 0)", values[0], values[1]),
-            PacketType::Lt(values) => write!(f, "({} < {} ? 1 : 0)", values[0], values[1]),
-            PacketType::Eq(values) => write!(f, "({} == {} ? 1 : 0)", values[0], values[1]),
-        }
+        let ternary = |values: &Vec<Packet>, op: &str| {
+            let (v1, v2) = if alternate {
+                (format!("{:>pad$}", values[0], pad = padding), format!("{:>pad$}", values[1], pad = padding))
+            } else {
+                (format!("{}", values[0]), format!("{}", values[1]))
+            };
+
+            format!("({} {} {} ? 1 : 0)", v1, op, v2)
+        };
+
+        let output = match self {
+            PacketType::Sum(values) => joined(values, "(", ")", " + "),
+            PacketType::Product(values) => joined(values, "(", ")", " * "),
+            PacketType::Min(values) => joined(values, "min(", ")", ", "),
+            PacketType::Max(values) => joined(values, "max(", ")", ", "),
+            PacketType::Literal(num) => format!("{}", num),
+            PacketType::Gt(values) => ternary(values, ">"),
+            PacketType::Lt(values) => ternary(values, "<"),
+            PacketType::Eq(values) => ternary(values, "=="),
+        };
+
+        write!(f, "{}", output)
     }
 
 }
@@ -103,7 +132,13 @@ impl Packet {
 impl std::fmt::Display for Packet {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
-        write!(f, "{}", self.content)
+        let width = f.width();
+
+        if f.alternate() || width.is_some() {
+            write!(f, "{:>pad$}", self.content, pad = width.unwrap_or(0))
+        } else {
+            write!(f, "{}", self.content)
+        }
     }
 
 }
