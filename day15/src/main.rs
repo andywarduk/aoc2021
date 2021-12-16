@@ -27,13 +27,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn part1(risks: &[Vec<Risk>]) {
     let lowest_risk = find_lowest_risk(risks);
 
-    println!("Part 1: Lowest risk: {:?}", lowest_risk);
+    println!("Part 1: Lowest risk: {}", lowest_risk);
 }
 
 fn part2(risks: &[Vec<Risk>]) {
     let lowest_risk = find_lowest_risk(risks);
 
-    println!("Part 2: Lowest risk: {:?}", lowest_risk);
+    println!("Part 2: Lowest risk: {}", lowest_risk);
 }
 
 fn neighbours(x: Coord, y: Coord, max_x: Coord, max_y: Coord) -> impl Iterator<Item = Coords> {
