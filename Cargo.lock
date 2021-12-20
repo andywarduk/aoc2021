@@ -417,6 +417,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "day19"
+version = "0.1.0"
+dependencies = [
+ "impl_ops",
+ "itertools",
+ "lazy_static",
+ "memmap2",
+]
+
+[[package]]
 name = "deflate"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
