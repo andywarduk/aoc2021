@@ -82,35 +82,41 @@ fn play2(p1_start: u8, p2_start: u8) -> (u64, u64) {
     let mut winning_universes: [u64; 2] = [0, 0];
 
     states.push_back(State {
-        players: [Player { score: 0, pos: p1_start }, Player { score: 0, pos: p2_start }],
+        players: [Player { score: 0, pos: p1_start - 1 }, Player { score: 0, pos: p2_start - 1 }],
         turn: 0,
         universes: 1
     });
 
     while let Some(cur) = states.pop_front() {
+        let cur_player_num = cur.turn as usize % 2;
+        let cur_player = &cur.players[cur_player_num];
+        let cur_pos = cur_player.pos;
+        let cur_score = cur_player.score;
+        let cur_universes = cur.universes;
+
         for roll in 3..=9 {
-            let mut next = cur.clone();
+            let next_pos = (cur_pos + roll) % 10;
+            let next_score = cur_score + next_pos + 1;
+            let next_universes = cur_universes * NEW_UNIVERSES[roll as usize];
 
-            let player = next.turn as usize % 2;
-
-            next.players[player].pos = (((next.players[player].pos - 1) + roll) % 10) + 1;
-            next.players[player].score += next.players[player].pos;
-            next.universes *= NEW_UNIVERSES[roll as usize];
-
-            if next.players[player].score >= 21 {
-                winning_universes[player] += next.universes;
+            if next_score >= 21 {
+                winning_universes[cur_player_num] += next_universes;
             } else {
-                next.turn += 1;
-                states.push_back(next);
+                let mut players = cur.players.clone();
+                players[cur_player_num].pos = next_pos;
+                players[cur_player_num].score = next_score;
+
+                states.push_back(State {
+                    players,
+                    turn: cur.turn + 1,
+                    universes: next_universes
+                })
             }
         }
     }
 
     (winning_universes[0], winning_universes[1])
 }
-
-//dice roll is 3-9
-
 
 #[test]
 fn test_part1() {
