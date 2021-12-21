@@ -78,7 +78,7 @@ struct State {
 const NEW_UNIVERSES: [u64; 10] = [0, 0, 0, 1, 3, 6, 7, 6, 3, 1];
 
 fn play2(p1_start: u8, p2_start: u8) -> (u64, u64) {
-    let mut states: VecDeque<State> = VecDeque::new();
+    let mut states: VecDeque<State> = VecDeque::with_capacity(1_750_000);
     let mut winning_universes: [u64; 2] = [0, 0];
 
     states.push_back(State {
@@ -88,7 +88,8 @@ fn play2(p1_start: u8, p2_start: u8) -> (u64, u64) {
     });
 
     while let Some(cur) = states.pop_front() {
-        let cur_player_num = cur.turn as usize % 2;
+        let cur_turn = cur.turn;
+        let cur_player_num = cur_turn as usize % 2;
         let cur_player = &cur.players[cur_player_num];
         let cur_pos = cur_player.pos;
         let cur_score = cur_player.score;
@@ -108,7 +109,7 @@ fn play2(p1_start: u8, p2_start: u8) -> (u64, u64) {
 
                 states.push_back(State {
                     players,
-                    turn: cur.turn + 1,
+                    turn: cur_turn + 1,
                     universes: next_universes
                 })
             }
