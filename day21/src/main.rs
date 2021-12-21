@@ -1,13 +1,16 @@
 use std::collections::VecDeque;
 use std::cmp;
 use itertools::Itertools;
+use num_format::{SystemLocale, ToFormattedString, Format as NumFormat};
 
 const P1_START: u8 = 10;
 const P2_START: u8 = 2;
 
 fn main() {
+    let locale = SystemLocale::default().unwrap();
+
     part1();
-    part2();
+    part2(&locale);
 }
 
 fn part1() {
@@ -16,10 +19,14 @@ fn part1() {
     println!("Part 1: {} rolls, other player score {}, total: {}", rolls, other_score, rolls * other_score as usize);
 }
 
-fn part2() {
+fn part2<F: NumFormat>(locale: &F) {
     let (win1, win2) = play2(P1_START, P2_START);
 
-    println!("Part 2: player 1 wins {}, player 2 wins {}, max: {}", win1, win2, cmp::max(win1, win2));
+    println!("Part 2: player 1 wins {} player 2 wins {} max: {}",
+        win1.to_formatted_string(locale),
+        win2.to_formatted_string(locale),
+        cmp::max(win1, win2)
+    );
 }
 
 fn play1(p1_start: u8, p2_start: u8) -> (usize, u16) {

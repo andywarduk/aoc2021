@@ -438,6 +438,15 @@ name = "day21"
 version = "0.1.0"
 dependencies = [
  "itertools",
+ "num-format",
+]
+
+[[package]]
+name = "day22"
+version = "0.1.0"
+dependencies = [
+ "memmap2",
+ "num-format",
 ]
 
 [[package]]
