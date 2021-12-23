@@ -742,6 +742,43 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'day22'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=day22",
+                    "--package=day22"
+                ],
+                "filter": {
+                    "name": "day22",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'day22'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=day22",
+                    "--package=day22"
+                ],
+                "filter": {
+                    "name": "day22",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
