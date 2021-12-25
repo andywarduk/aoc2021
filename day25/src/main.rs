@@ -8,7 +8,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Run parts
     part1(&mut map.clone());
-    //part2(&program);
 
     Ok(())
 }
@@ -86,7 +85,7 @@ fn do_move(map: &mut Vec<Vec<char>>) -> usize {
 mod tests {
     use super::*;
 
-    fn maps_equal(m1: &Vec<Vec<char>>, m2: &Vec<Vec<char>>) {
+    fn maps_equal(m1: &[Vec<char>], m2: &[Vec<char>]) {
         for i in 0..m1.len() {
             assert_eq!(m1[i], m2[i], "Row {} incorrect", i)
         }
