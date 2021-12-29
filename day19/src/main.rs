@@ -4,7 +4,7 @@ mod trans;
 
 use std::collections::BTreeMap;
 use std::error::Error;
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use coord::Coord;
 use trans::TRANS_MATRICES;
@@ -26,7 +26,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(points: &[Coord]) {
-
     println!("Part 1: Number of beacons: {}", points.len());
 }
 
@@ -51,6 +50,8 @@ fn build_map(reports: &[Vec<Coord>]) -> Vec<Scanner> {
         coords: reports[0].clone(),
     });
 
+    let mut trans_map: FxHashMap<Coord, usize> = FxHashMap::default();
+
     loop {
         let mut count = 0;
 
@@ -65,7 +66,7 @@ fn build_map(reports: &[Vec<Coord>]) -> Vec<Scanner> {
                 let s2 = &solved_ent.coords;
 
                 for trans in &*TRANS_MATRICES {
-                    let mut trans_map: HashMap<Coord, usize> = HashMap::with_capacity(reports.len());
+                    trans_map.clear();
 
                     for r1 in s1.iter().map(|r| trans.transform(r)) {
                         for r2 in s2 {
@@ -75,11 +76,13 @@ fn build_map(reports: &[Vec<Coord>]) -> Vec<Scanner> {
                     }
 
                     if let Some(diff) = trans_map.iter().find(|(_, &cnt)| cnt >= 12).map(|(coord, _)| coord) {
-                        println!("Solved {} -> {} ({})", e2, e1, diff);
+                        println!("Solved {} -> {} ({}, {})", e2, e1, diff, trans.name());
+
                         new_coords = Some((
                             s1.iter().map(|r| diff + trans.transform(r)).collect(),
                             diff.clone()
                         ));
+
                         break
                     }
                 }
@@ -112,7 +115,7 @@ fn build_map(reports: &[Vec<Coord>]) -> Vec<Scanner> {
 }
 
 fn build_points(map: &[Scanner]) -> Vec<Coord> {
-    let mut point_hash = HashSet::new();
+    let mut point_hash = FxHashSet::default();
 
     for s in map.iter() {
         for point in &s.coords {

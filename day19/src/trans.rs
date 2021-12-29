@@ -19,6 +19,10 @@ impl TransMatrix {
         }
     }
 
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
 }
 
 lazy_static! {
