@@ -30,7 +30,7 @@ impl<'a> Parser<'a> {
             let take_mask = ((1u16 << take_bits as u16) - 1) as u8;
             let shift = cur_bits - take_bits;
 
-            let add = (self.data[cur_byte as usize] >> shift) & take_mask;
+            let add = (self.data[cur_byte] >> shift) & take_mask;
 
             result <<= take_bits.into();
             result |= add.into();

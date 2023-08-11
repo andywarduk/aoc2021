@@ -80,7 +80,7 @@ enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self {
+        match self {
             ParseError::Expect2Terms => write!(f, "two terms expected in action"),
             ParseError::UnknownAction(action) => write!(f, "action {} is unrecognised", action)
         }

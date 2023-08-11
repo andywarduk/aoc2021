@@ -65,10 +65,10 @@ fn count_cubes(instructions: &[Instruction], filterfn: fn(i: &&Instruction) -> b
         let z1 = map_coord(instruction.cube.ranges[2].start, zaxis);
         let z2 = map_coord(instruction.cube.ranges[2].end + 1, zaxis);
 
-        for z in z1..z2 {
-            for y in y1..y2 {
-                for x in x1..x2 {
-                    map[z][y][x] = instruction.on;
+        for mapz in map.iter_mut().take(z2).skip(z1) {
+            for mapy in mapz.iter_mut().take(y2).skip(y1) {
+                for mapx in mapy.iter_mut().take(x2).skip(x1) {
+                    *mapx = instruction.on;
                 }
             }
         }    

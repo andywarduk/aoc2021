@@ -107,7 +107,7 @@ enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self {
+        match self {
             ParseError::Expect2Coords => write!(f, "two coordinates expected in dot position"),
             ParseError::Expect2FoldTerms => write!(f, "two terms expected in fold position"),
             ParseError::ExpectFoldAlong => write!(f, "expecting line to start 'fold along '"),

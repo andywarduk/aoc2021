@@ -93,15 +93,14 @@ fn true_count(bits: &[Vec<bool>], bit_pos: usize) -> usize {
 
 fn reduce_common_bits(bits: Vec<Vec<bool>>, bit_pos: usize, most: bool) -> Vec<bool> {
     let true_count = true_count(&bits, bit_pos);
-    let filter: bool;
 
-    if true_count >= (bits.len() - true_count) {
+    let filter = if true_count >= (bits.len() - true_count) {
         // Mostly ones
-        filter = most;
+        most
     } else {
         // Mostly zeroes
-        filter = !most;
-    }
+        !most
+    };
 
     let next: Vec<Vec<bool>> = bits.iter().filter(|e| e[bit_pos] == filter).cloned().collect();
 
@@ -126,7 +125,7 @@ enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self {
+        match self {
             ParseError::NotZeroOrOne => write!(f, "'0' or '1' expected'"),
         }
     }

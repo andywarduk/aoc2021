@@ -267,7 +267,7 @@ impl TryFrom<&str> for SnailNum {
 
         let flush_num = |end, tokens: &mut Vec<_>, num_start: &mut Option<usize>| {
             if let Some(start) = *num_start {
-                tokens.push(SnailNumToken::Number((&item[start..end]).parse::<SnailNumBase>().unwrap()));
+                tokens.push(SnailNumToken::Number((item[start..end]).parse::<SnailNumBase>().unwrap()));
                 *num_start = None;
             }
         };
@@ -320,7 +320,7 @@ enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self {
+        match self {
             ParseError::InvalidChar => write!(f, "invald character"),
         }
     }

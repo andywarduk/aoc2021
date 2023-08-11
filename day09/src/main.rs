@@ -169,13 +169,13 @@ fn gen_basin_png(heights: &[Vec<u8>], filename: &str) {
 
     let mut writer = encoder.write_header().unwrap();
 
-    let one_bit_data: Vec<u8> = heights.iter().map(|row| {
+    let one_bit_data: Vec<u8> = heights.iter().flat_map(|row| {
         let rim: Vec<u8> = row.iter().map(|&h| if h == 9 { 1 } else { 0 }).collect();
 
         rim.chunks(8).map(|a| {
             a.iter().fold(0, |acc, bit| acc << 1 | bit)
         }).collect::<Vec<u8>>()
-    }).flatten().collect();
+    }).collect();
 
     writer.write_image_data(&one_bit_data).unwrap();
 }

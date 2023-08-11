@@ -38,7 +38,7 @@ cached_key!{
     Key = { format!("{}{}", pos_hash, from) };
 
     fn calculate_fuel1(positions: &[u16], pos_hash: u64, from: u16) -> u32 = {
-        positions.iter().map(|p| (from as i32 - *p as i32).abs() as u32).sum::<u32>()
+        positions.iter().map(|p| (from as i32 - *p as i32).unsigned_abs()).sum::<u32>()
     }
 }
 
@@ -52,7 +52,7 @@ cached_key!{
 
     fn calculate_fuel2(positions: &[u16], pos_hash: u64, from: u16) -> u32 = {
         positions.iter().map(|p| {
-            let dist = (from as i32 - *p as i32).abs() as u32;
+            let dist = (from as i32 - *p as i32).unsigned_abs();
             (dist * (dist + 1)) / 2
         }).sum::<u32>()
     }

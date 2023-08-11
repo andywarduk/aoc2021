@@ -165,7 +165,7 @@ fn load_buf(buf: &[u8]) -> Result<Vec<Coords>, Box<dyn Error>> {
 
         if !line.is_empty() {
             let nums: Vec<u16> = line
-                .split(|c: char| !c.is_digit(10))
+                .split(|c: char| !c.is_ascii_digit())
                 .filter(|s| s != &"")
                 .map(|ns| ns.parse::<u16>())
                 .collect::<Result<Vec<u16>, _>>()?;

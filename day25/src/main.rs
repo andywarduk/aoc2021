@@ -37,17 +37,17 @@ fn do_move(map: &mut Vec<Vec<char>>) -> usize {
     let mut moved = 0;
 
     // East moves
-    for y in 0..height {
+    for row in map.iter_mut() {
         let mut x = 0;
-        let x0 = map[y][x];
+        let x0 = row[x];
 
         while x < width {
-            if map[y][x] == '>' {
+            if row[x] == '>' {
                 let new_x = (x + 1) % width;
 
-                if (new_x == 0 && x0 == '.') || (new_x > 0 && map[y][new_x] == '.') {
-                    map[y][new_x] = '>';
-                    map[y][x] = '.';
+                if (new_x == 0 && x0 == '.') || (new_x > 0 && row[new_x] == '.') {
+                    row[new_x] = '>';
+                    row[x] = '.';
                     moved += 1;
                     x += 1;
                 }

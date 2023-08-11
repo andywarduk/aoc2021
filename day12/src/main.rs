@@ -35,7 +35,7 @@ fn part2(tree: &Tree) {
 fn write_dot(tree: &Tree, file: &str) -> Result<(), Box<dyn Error>> {
     let path = Path::new(file);
 
-    let mut file = File::create(&path)?;
+    let mut file = File::create(path)?;
 
     writeln!(&mut file, "digraph caves {{")?;
     writeln!(&mut file, "\tconcentrate=true;")?;

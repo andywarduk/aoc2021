@@ -126,7 +126,7 @@ enum ParseError {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &*self {
+        match self {
             ParseError::ExpectArrow => write!(f, "single arrow operator expected"),
             ParseError::Expect2SubSrcChars => write!(f, "two characters expected in substitution source"),
             ParseError::Expect1SubDstChar => write!(f, "one characters expected in substitution destination"),

@@ -111,7 +111,7 @@ fn build_map(reports: &[Vec<Coord>]) -> Vec<Scanner> {
         }
     }
 
-    solved.into_iter().map(|(_, solved)| solved).collect()
+    solved.into_values().collect()
 }
 
 fn build_points(map: &[Scanner]) -> Vec<Coord> {
